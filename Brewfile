@@ -1,3 +1,4 @@
+brew "asmvik/formulae/skhd"
 brew "bitwarden-cli"
 brew "coreutils"
 brew "entr"

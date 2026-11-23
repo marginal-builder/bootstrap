@@ -32,8 +32,8 @@ enter your password again. The rule is removed when the script exits.
 
 ## What it installs
 
-- Homebrew packages from `Brewfile` (a lean dev set plus Firefox, Ghostty, Figma
-  and Bitwarden)
+- Homebrew packages from `Brewfile` (a lean dev set plus Firefox, Ghostty, Figma,
+  Bitwarden and skhd)
 - SSH key and signed Git commits
 - macOS preferences, Dock layout, Space assignments
 - Firefox `user.js` and `userChrome.css`
@@ -71,4 +71,4 @@ RUN_SOFTWAREUPDATE=0 SETUP_SPACES=0 \
 
 Available flags: `RUN_SOFTWAREUPDATE`, `SETUP_DOTFILES`, `SETUP_PREFERENCES`,
 `SETUP_DOCK`, `SETUP_SPACES`, `SETUP_FIREFOX`, `SETUP_FIGMA`, `SETUP_MAIL`
-(off by default), `SETUP_SKHD` (off by default).
+(off by default), `SETUP_SKHD` (on by default).
