@@ -19,7 +19,7 @@ SETUP_DOCK="${SETUP_DOCK:-1}"
 SETUP_SPACES="${SETUP_SPACES:-1}"
 SETUP_FIREFOX="${SETUP_FIREFOX:-1}"
 SETUP_FIGMA="${SETUP_FIGMA:-1}"
-SETUP_MAIL="${SETUP_MAIL:-1}"
+SETUP_MAIL="${SETUP_MAIL:-0}"
 SETUP_SKHD="${SETUP_SKHD:-0}"
 
 SSH_DIR="$HOME/.ssh"
@@ -351,13 +351,16 @@ if [ "$SETUP_DOTFILES" = "1" ]; then
     fi
 fi
 
-if [ "$SETUP_MAIL" = "1" ]; then
-    green_echo "SETTING UP THE MAIL ACCOUNTS"
-    MAIL_FAILED=""
-    if ! "$BOOTSTRAP_DIR/mail-setup.sh"; then
-        MAIL_FAILED="yes"
-    fi
-fi
+# Mail setup is off by default. Gmail, iCloud and Exchange accounts are added
+# in System Settings > Internet Accounts. To use the Bitwarden IMAP workflow,
+# uncomment this block and run with SETUP_MAIL=1.
+# if [ "$SETUP_MAIL" = "1" ]; then
+#     green_echo "SETTING UP THE MAIL ACCOUNTS"
+#     MAIL_FAILED=""
+#     if ! "$BOOTSTRAP_DIR/mail-setup.sh"; then
+#         MAIL_FAILED="yes"
+#     fi
+# fi
 
 if [ "$SETUP_SKHD" = "1" ] && command -v skhd &> /dev/null; then
     green_echo "STARTING SKHD"

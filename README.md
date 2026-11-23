@@ -23,12 +23,12 @@ enter your password again. The rule is removed when the script exits.
 
 - **Desktops:** create the Desktops listed in `spaces-items.txt` in Mission
   Control (four, by default). `spaces-setup.sh` pauses until they exist.
-- **Mail (optional):** create a Bitwarden folder called `bootstrap-mail` with one
-  login per account. The username must be the email address, and each login
-  needs a custom field called `host` with the mail server. Set `SETUP_MAIL=0` to
-  skip this step.
-- **Bitwarden:** the mail step uses the Bitwarden CLI, so you'll be asked to log
-  in or unlock during the run.
+- **Mail:** off by default. Add Gmail, iCloud, or Exchange accounts in
+  **System Settings → Internet Accounts**. For custom IMAP accounts, create a
+  Bitwarden folder called `bootstrap-mail` with one login per account (username =
+  email address, custom field `host` = mail server), uncomment the mail block in
+  `install.sh`, and run with `SETUP_MAIL=1`.
+- **Bitwarden:** only needed if you enable the custom IMAP mail step.
 
 ## What it installs
 
@@ -39,6 +39,15 @@ enter your password again. The rule is removed when the script exits.
 - Firefox `user.js` and `userChrome.css`
 - FigmaAgent login-item block
 - Your `dotfiles` repo, linked into `~/.config`
+
+## After the run
+
+1. Restart the Mac to load the key remapping and Firefox settings.
+2. Open a new terminal window so the new shell config loads.
+3. Add Gmail, iCloud, or Exchange accounts in
+   **System Settings → Internet Accounts**.
+4. Optional: add more packages to `Brewfile` and run
+   `brew bundle --file ~/git/bootstrap/Brewfile`.
 
 ## Customization
 
@@ -56,10 +65,10 @@ Each step can be turned off with an environment variable when running the
 installer:
 
 ```sh
-RUN_SOFTWAREUPDATE=0 SETUP_MAIL=0 SETUP_SPACES=0 \
+RUN_SOFTWAREUPDATE=0 SETUP_SPACES=0 \
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/marginal-builder/bootstrap/main/install.sh)"
 ```
 
 Available flags: `RUN_SOFTWAREUPDATE`, `SETUP_DOTFILES`, `SETUP_PREFERENCES`,
-`SETUP_DOCK`, `SETUP_SPACES`, `SETUP_FIREFOX`, `SETUP_FIGMA`, `SETUP_MAIL`,
-`SETUP_SKHD` (off by default).
+`SETUP_DOCK`, `SETUP_SPACES`, `SETUP_FIREFOX`, `SETUP_FIGMA`, `SETUP_MAIL`
+(off by default), `SETUP_SKHD` (off by default).
