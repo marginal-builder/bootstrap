@@ -17,8 +17,7 @@ fi
 
 pkill -x figma_agent 2> /dev/null || true
 
-osascript -e 'tell application "System Events" to delete (every login item whose name is "FigmaAgent")' \
-    > /dev/null 2>&1 || echo "Remove FigmaAgent from the Login Items by hand"
+echo "If FigmaAgent is still listed in Login Items, remove it by hand."
 
 mkdir -p "$(dirname "$AGENT_APP")"
 rm -rf "$AGENT_APP"
