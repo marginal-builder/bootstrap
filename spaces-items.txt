@@ -2,5 +2,4 @@
 2 org.mozilla.firefox
 3 com.apple.mail
 3 com.apple.Notes
-4 org.blenderfoundation.blender
 4 com.figma.Desktop

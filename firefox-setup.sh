@@ -14,10 +14,20 @@ profiles=("$PROFILES_DIR"/*/)
 if [ "${#profiles[@]}" -eq 0 ]; then
     open -a Firefox
     echo "Waiting for Firefox to create a profile (press enter to skip)"
+    attempts=0
     until [ "${#profiles[@]}" -gt 0 ]; do
-        if read -r -t 2 _ < /dev/tty; then
-            echo "Skipping, re-run this script once Firefox has started"
+        attempts=$((attempts + 1))
+        if [ "$attempts" -ge 30 ]; then
+            echo "Firefox has not created a profile yet, re-run this script later"
             exit 0
+        fi
+        if [ -t 0 ]; then
+            if read -r -t 2 _ < /dev/tty; then
+                echo "Skipping, re-run this script once Firefox has started"
+                exit 0
+            fi
+        else
+            sleep 2
         fi
         profiles=("$PROFILES_DIR"/*/)
     done

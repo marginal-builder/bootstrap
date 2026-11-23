@@ -4,6 +4,7 @@
 # The Desktops themselves have to be created by hand in Mission Control
 
 SPACES="SpacesDisplayConfiguration.Management Data.Monitors.0.Spaces"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Read the UUIDs of all Desktops in order, skipping full screen apps (type 4)
 load_desktops() {
@@ -18,7 +19,7 @@ load_desktops() {
     done
 }
 
-needed="$(cut -d ' ' -f 1 spaces-items.txt | sort -n | tail -1)"
+needed="$(cut -d ' ' -f 1 "$SCRIPT_DIR/spaces-items.txt" | sort -n | tail -1)"
 load_desktops
 while [ "${#desktops[@]}" -lt "$needed" ]; do
     echo "Found ${#desktops[@]} Desktops, but $needed are needed"
@@ -30,7 +31,7 @@ done
 bindings=()
 while read -r desktop bundle_id; do
     bindings+=("$(echo "$bundle_id" | tr '[:upper:]' '[:lower:]')" "${desktops[$((desktop - 1))]}")
-done < spaces-items.txt
+done < "$SCRIPT_DIR/spaces-items.txt"
 defaults write com.apple.spaces "app-bindings" -dict "${bindings[@]}"
 
 killall Dock

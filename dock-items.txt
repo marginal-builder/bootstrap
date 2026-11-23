@@ -6,4 +6,4 @@
 /System/Applications/Reminders.app
 /System/Applications/Notes.app
 /System/Applications/Podcasts.app
-/Applications/Blender.app
+/Applications/Figma.app

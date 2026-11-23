@@ -4,19 +4,31 @@
 # the repo into a proper location
 
 # Settings
-GITHUB_USERNAME="vanderoost"
+GITHUB_USERNAME="marginal-builder"
 BOOTSTRAP_REPO_NAME="bootstrap"
+DOTFILES_REPO_NAME="dotfiles"
 
-GIT_NAME="Richard van der Oost"
-GIT_EMAIL="richard@vanderoost.com"
+GIT_NAME="Anirudh Sharma"
+GIT_EMAIL="309394543+marginal-builder@users.noreply.github.com"
 
 USE_SSH=1
+RUN_SOFTWAREUPDATE="${RUN_SOFTWAREUPDATE:-1}"
+SETUP_DOTFILES="${SETUP_DOTFILES:-1}"
+SETUP_PREFERENCES="${SETUP_PREFERENCES:-1}"
+SETUP_DOCK="${SETUP_DOCK:-1}"
+SETUP_SPACES="${SETUP_SPACES:-1}"
+SETUP_FIREFOX="${SETUP_FIREFOX:-1}"
+SETUP_FIGMA="${SETUP_FIGMA:-1}"
+SETUP_MAIL="${SETUP_MAIL:-1}"
+SETUP_SKHD="${SETUP_SKHD:-0}"
+
 SSH_DIR="$HOME/.ssh"
 SSH_KEY_FILE="$SSH_DIR/id_ed25519"
 ALLOWED_SIGNERS_FILE="$SSH_DIR/allowed_signers"
 GH_KEY_SCOPES="admin:public_key,admin:ssh_signing_key"
 GIT_DIR="$HOME/git"
 BOOTSTRAP_DIR="$GIT_DIR/$BOOTSTRAP_REPO_NAME"
+DOTFILES_DIR="$GIT_DIR/$DOTFILES_REPO_NAME"
 SUDOERS_FILE="/etc/sudoers.d/bootstrap-nopasswd"
 
 set -eu
@@ -121,8 +133,13 @@ CAFFEINATE_PID=$!
 ) &
 SUDO_KEEPALIVE_PID=$!
 
-green_echo "INSTALL ALL AVAILABLE UPDATES"
-sudo softwareupdate -ia --verbose
+if [ "$RUN_SOFTWAREUPDATE" = "1" ]; then
+    green_echo "INSTALL ALL AVAILABLE UPDATES"
+    sudo softwareupdate -ia --verbose
+else
+    green_echo "SKIPPING SOFTWARE UPDATES"
+    echo "Run 'sudo softwareupdate -ia' yourself when you have time."
+fi
 
 sudo scutil --set ComputerName "$HOSTNAME"
 sudo scutil --set HostName "$HOSTNAME"
@@ -244,19 +261,12 @@ else
 fi
 
 green_echo "INSTALLING ALL HOMEBREW PACKAGES"
-brew trust --formula asmvik/formulae/skhd
-brew trust --formula stripe/stripe-cli/stripe
 
 # mas can no longer sign in by itself, the App Store app has to do it
 if brew bundle check --verbose --file "$BOOTSTRAP_DIR/Brewfile" 2> /dev/null \
     | grep -q '→ App '; then
     open -a "App Store"
     read -r -p "Press enter once you've signed in to the App Store... " _ < /dev/tty
-fi
-
-WACOM_IS_NEW=""
-if ! brew list --cask wacom-tablet &> /dev/null; then
-    WACOM_IS_NEW="yes"
 fi
 
 BUNDLE_FAILED=""
@@ -266,7 +276,9 @@ fi
 brew cleanup
 
 # Pin Neovim so it doesn't randomly break
-brew pin neovim
+if brew list --formula neovim &> /dev/null; then
+    brew pin neovim
+fi
 
 green_echo "SETTING UP XCODE"
 XCODE_DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
@@ -280,27 +292,42 @@ else
     echo "Xcode is not installed, skipping"
 fi
 
-green_echo "SET PREFERENCES"
-"$BOOTSTRAP_DIR/preferences.sh"
+if [ "$SETUP_PREFERENCES" = "1" ]; then
+    green_echo "SET PREFERENCES"
+    "$BOOTSTRAP_DIR/preferences.sh"
+fi
 
-green_echo "SETUP THE DOCK"
-cd "$BOOTSTRAP_DIR"
-./dock-setup.sh
-cd "$HOME"
+if [ "$SETUP_DOCK" = "1" ]; then
+    green_echo "SETUP THE DOCK"
+    cd "$BOOTSTRAP_DIR"
+    ./dock-setup.sh
+    cd "$HOME"
+fi
 
-green_echo "ASSIGN APPS TO DESKTOPS"
-cd "$BOOTSTRAP_DIR"
-./spaces-setup.sh
-cd "$HOME"
+if [ "$SETUP_SPACES" = "1" ]; then
+    green_echo "ASSIGN APPS TO DESKTOPS"
+    cd "$BOOTSTRAP_DIR"
+    ./spaces-setup.sh
+    cd "$HOME"
+fi
 
-green_echo "LINKING THE FIREFOX USERCHROME.CSS"
-"$BOOTSTRAP_DIR/firefox-setup.sh"
+if [ "$SETUP_FIREFOX" = "1" ]; then
+    green_echo "LINKING THE FIREFOX USERCHROME.CSS"
+    "$BOOTSTRAP_DIR/firefox-setup.sh"
+fi
 
-green_echo "KEEPING FIGMAAGENT OUT OF THE LOGIN ITEMS"
-"$BOOTSTRAP_DIR/figma-setup.sh"
+if [ "$SETUP_FIGMA" = "1" ]; then
+    if [ -d "/Applications/Figma.app" ]; then
+        green_echo "KEEPING FIGMAAGENT OUT OF THE LOGIN ITEMS"
+        "$BOOTSTRAP_DIR/figma-setup.sh"
+    else
+        echo "Figma is not installed, skipping"
+    fi
+fi
 
 green_echo "INSTALLING GITHUB REPOSITORIES"
 while read -r repo; do
+    [ -n "$repo" ] || continue
     if [ -d "$GIT_DIR/$repo" ]
     then
         echo "Refreshing the $repo repository"
@@ -311,80 +338,52 @@ while read -r repo; do
         echo "Cloning the entire $repo repository"
         cd "$GIT_DIR"
         git clone "git@github.com:$GITHUB_USERNAME/$repo"
-        cd $HOME
+        cd "$HOME"
     fi
 done < "$BOOTSTRAP_DIR/github-repos.txt"
 
-green_echo "INITIALIZING DROPBOX"
-DROPBOX_INFO="$HOME/.dropbox/info.json"
-
-# Signed in once Dropbox wrote its info file and the synced folders exist
-dropbox_ready() {
-    local path
-    [ -f "$DROPBOX_INFO" ] || return 1
-    while read -r path; do
-        [ -d "$path" ] || return 1
-    done < <(jq -r '.[].path' "$DROPBOX_INFO" 2> /dev/null)
-}
-
-if dropbox_ready; then
-    echo "All good"
-else
-    open -a Dropbox
-    echo "Waiting for the Dropbox sign-in (press enter to skip)"
-    until dropbox_ready; do
-        if read -r -t 5 _ < /dev/tty; then
-            echo "Skipping, Dropbox folders won't be linked"
-            break
-        fi
-    done
-fi
-
-green_echo "SETTING UP THE MAIL ACCOUNTS"
-MAIL_FAILED=""
-if ! "$BOOTSTRAP_DIR/mail-setup.sh"; then
-    MAIL_FAILED="yes"
-fi
-
-green_echo "DOWNLOADING AND INSTALLING DOTFILE CONFIGS"
-cd "$GIT_DIR/home"
-./install.sh
-cd "$HOME"
-
-green_echo "STARTING SKHD"
-SKHD_PLIST="$HOME/Library/LaunchAgents/com.koekeishiya.skhd.plist"
-
-# --restart-service only works on a loaded service, --start-service loads it
-skhd_start() {
-    if launchctl print "gui/$(id -u)/com.koekeishiya.skhd" &> /dev/null; then
-        skhd --restart-service
+if [ "$SETUP_DOTFILES" = "1" ]; then
+    green_echo "INSTALLING DOTFILES"
+    if [ -x "$DOTFILES_DIR/install.sh" ]; then
+        "$DOTFILES_DIR/install.sh"
     else
-        skhd --start-service
+        echo "WARNING: $DOTFILES_DIR/install.sh not found, skipping" >&2
     fi
-}
-
-[ -f "$SKHD_PLIST" ] || skhd --install-service
-skhd_start
-
-# skhd needs Accessibility access, which only the user can grant
-sleep 2
-if ! pgrep -x skhd &> /dev/null; then
-    echo "Allow skhd under Accessibility (use + and Cmd+Shift+G to add"
-    echo "$(readlink -f "$(command -v skhd)") if it's not listed)"
-    open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-    read -r -p "Press enter once skhd is allowed... " _ < /dev/tty
-    skhd_start
 fi
 
-# The Wacom driver needs permissions only the user can grant, so ask once
-if [ -n "$WACOM_IS_NEW" ] && brew list --cask wacom-tablet &> /dev/null; then
-    green_echo "ALLOWING THE WACOM DRIVER"
-    echo "Allow the Wacom entries under Accessibility"
-    open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-    read -r -p "Press enter once they're allowed... " _ < /dev/tty
-    echo "Allow the Wacom entries under Input Monitoring"
-    open "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent"
-    read -r -p "Press enter once they're allowed... " _ < /dev/tty
+if [ "$SETUP_MAIL" = "1" ]; then
+    green_echo "SETTING UP THE MAIL ACCOUNTS"
+    MAIL_FAILED=""
+    if ! "$BOOTSTRAP_DIR/mail-setup.sh"; then
+        MAIL_FAILED="yes"
+    fi
+fi
+
+if [ "$SETUP_SKHD" = "1" ] && command -v skhd &> /dev/null; then
+    green_echo "STARTING SKHD"
+    SKHD_PLIST="$HOME/Library/LaunchAgents/com.koekeishiya.skhd.plist"
+
+    # --restart-service only works on a loaded service, --start-service loads it
+    skhd_start() {
+        if launchctl print "gui/$(id -u)/com.koekeishiya.skhd" &> /dev/null; then
+            skhd --restart-service
+        else
+            skhd --start-service
+        fi
+    }
+
+    [ -f "$SKHD_PLIST" ] || skhd --install-service
+    skhd_start
+
+    # skhd needs Accessibility access, which only the user can grant
+    sleep 2
+    if ! pgrep -x skhd &> /dev/null; then
+        echo "Allow skhd under Accessibility (use + and Cmd+Shift+G to add"
+        echo "$(readlink -f "$(command -v skhd)") if it's not listed)"
+        open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        read -r -p "Press enter once skhd is allowed... " _ < /dev/tty
+        skhd_start
+    fi
 fi
 
 green_echo "ALL DONE"
@@ -392,10 +391,10 @@ if [ -n "$BUNDLE_FAILED" ]; then
     echo "WARNING: some Brewfile entries failed to install, see the output above," >&2
     echo "then run: brew bundle --file $BOOTSTRAP_DIR/Brewfile" >&2
 fi
-if [ -n "$MAIL_FAILED" ]; then
+if [ -n "${MAIL_FAILED:-}" ]; then
     echo "WARNING: the Mail accounts weren't set up, see the output above," >&2
     echo "then run: $BOOTSTRAP_DIR/mail-setup.sh" >&2
 fi
 
 echo "Open a new terminal window to load the new PATH and dotfiles"
-echo "Restart the Mac to load the audio driver and the key remapping"
+echo "Restart the Mac to load the key remapping"

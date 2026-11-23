@@ -2,6 +2,8 @@
 
 # Set up the Dock with apps from 'dock-items.txt'
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 # Full reset to default
 defaults delete com.apple.dock
 killall Dock
@@ -17,7 +19,7 @@ echo
 tiles=()
 while read -r dock_item; do
     tiles+=("<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>$dock_item</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>")
-done < dock-items.txt
+done < "$SCRIPT_DIR/dock-items.txt"
 defaults write com.apple.dock "persistent-apps" -array "${tiles[@]}"
 
 # Reset recent apps

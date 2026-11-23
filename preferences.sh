@@ -6,14 +6,13 @@
 # $XDG_CONFIG_HOME set
 # Dotfiles installed
 
-GIT_DIR="$HOME/git"
-BOOTSTRAP_REPO_NAME="bootstrap"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # MAC PREFERENCES
 
 # Keyboard remapping
 mkdir -p "$HOME/Library/LaunchAgents"
-cp "$GIT_DIR/$BOOTSTRAP_REPO_NAME/com.local.KeyRemapping.plist" \
+cp "$SCRIPT_DIR/com.local.KeyRemapping.plist" \
     "$HOME/Library/LaunchAgents/com.local.KeyRemapping.plist"
 
 # launchd only scans LaunchAgents at login, so load it now to apply the

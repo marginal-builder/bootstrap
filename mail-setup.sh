@@ -7,10 +7,10 @@
 # 'host' with the mail server. cPanel uses the same server and ports for all.
 #
 # To pick up changed logins, remove the profile first:
-# profiles remove -identifier com.vanderoost.bootstrap.mail
+# profiles remove -identifier com.marginal-builder.bootstrap.mail
 
 BITWARDEN_FOLDER="bootstrap-mail"
-PROFILE_IDENTIFIER="com.vanderoost.bootstrap.mail"
+PROFILE_IDENTIFIER="com.marginal-builder.bootstrap.mail"
 PROFILES_SETTINGS="x-apple.systempreferences:com.apple.Profiles-Settings.extension"
 ACCOUNTS_SETTINGS="x-apple.systempreferences:com.apple.Internet-Accounts-Settings.extension"
 
